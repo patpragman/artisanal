@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,12 +10,13 @@ from sklearn.metrics import classification_report
 import yaml
 from pprint import pprint
 from pathlib import Path
+from math import sqrt
 
 HOME_DIRECTORY = Path.home()
 SEED = 42
 
 def calculate_conv_layer_output_size(n, p, f, s):
-    return (n + 2*p - f)/s + 1
+    return int((n + 2*p - f)/s + 1)
 
 class ArtisanalCNN(nn.Module):
     """
@@ -35,39 +37,44 @@ class ArtisanalCNN(nn.Module):
             fn = nn.Tanh()
 
         # calculate the size of the layers
-        layer_1_output_size = calculate_conv_layer_output_size(image_size, 1, 4, 2)/2  # divided by 2 for the pooling
-        layer_2_output_size = calculate_conv_layer_output_size(layer_1_output_size, 1, 4, 2)/2
-        layer_3_output_size = calculate_conv_layer_output_size(layer_2_output_size, 1, 4, 2)  # no division because no pool
-        print('output sizes calculated')
+        self.layer_1_output_size = calculate_conv_layer_output_size(sqrt(image_size/3), 1, 4, 2)//2  # divided by 2 for the pooling
+        self.layer_2_output_size = calculate_conv_layer_output_size(self.layer_1_output_size, 1, 4, 2)//2
+        self.layer_3_output_size = calculate_conv_layer_output_size(self.layer_2_output_size, 1, 4, 2)  # no division because no pool
+
+        print(self.layer_1_output_size)
+        print(self.layer_2_output_size)
+        print(self.layer_3_output_size)
 
         self.layer_1 = nn.Sequential(
-            nn.Conv2d(3, layer_1_filters, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(layer_1_output_size),
+            nn.Conv2d(in_channels=3,
+                      out_channels=layer_1_filters,
+                      kernel_size=4,
+                      stride=2,
+                      padding=1),
+            nn.BatchNorm2d(layer_1_filters),
             fn,
-            nn.MaxPool2d(kernel_size=2, stride=1))
-        print('layer_1 built')
+            nn.MaxPool2d(kernel_size=2, stride=2)
+            )
         self.layer_2 = nn.Sequential(
-            nn.Conv2d(layer_1_output_size, layer_2_filters, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(layer_2_output_size),
+            nn.Conv2d(in_channels=layer_1_filters,
+                      out_channels=layer_2_filters,
+                      kernel_size=4,
+                      stride=2,
+                      padding=1),
+            nn.BatchNorm2d(layer_2_filters),
             fn,
-            nn.MaxPool2d(kernel_size=2, stride=1))
-        print('layer_2 built')
-
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
         self.layer_3 = nn.Sequential(
-            nn.Conv2d(layer_2_output_size, layer_3_filters, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(layer_3_output_size),
+            nn.Conv2d(in_channels=layer_2_filters, out_channels=layer_3_filters, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(layer_3_filters),
             fn)
-
-        print('layer_3 built')
-
-
-
         self.fully_connected_1 = nn.Sequential(
             nn.Dropout(0.5),
-            nn.Linear(layer_3_output_size, layer_3_output_size),
+            nn.Linear(layer_3_filters*self.layer_3_output_size**2, 1024),
             fn)
         self.fully_connected_2 = nn.Sequential(
-            nn.Linear(layer_3_output_size, num_classes))
+            nn.Linear(1024, num_classes))
 
 
 
@@ -148,6 +155,8 @@ def find_best_model():
     wandb.log(dict(config))
 
 if __name__ == "__main__":
+
+
     wandb.agent(sweep_id, function=find_best_model)
 
     # Specify your W&B project and sweep ID

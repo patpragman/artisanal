@@ -1,0 +1,21 @@
+name: mlp-hyperparam-sweep
+method: bayes
+metric:
+  name: testing_loss
+  goal: minimize
+
+parameters:
+  input_size:
+    values: [512, 256, 224, 128, 64]
+  filter_sizes:
+    values: [4, 16, 32, 64, 128, 256, 512]
+  learning_rate:
+    values: [0.0001, 0.00001, 0.000001]
+  activation_function:
+    values: [relu, leaky_relu, tanh]
+  optimizer:
+    values: [sgd, adam]
+  epochs:
+    values: [40, 60]
+  batch_size:
+    values: [32]

@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.optim as optim
 import wandb
@@ -160,7 +159,7 @@ if __name__ == "__main__":
     wandb.agent(sweep_id, function=find_best_model)
 
     # Specify your W&B project and sweep ID
-    project_name = "Elodea Artisanal CNN"
+    project_name = "Artisanal CNN"
 
     # Fetch sweep runs
     api = wandb.Api()
@@ -181,3 +180,11 @@ if __name__ == "__main__":
     print(f"Run ID: {best_run.id}")
     print(f"Test Accuracy: {best_run.summary['accuracy']}")
     print(f"Hyperparameters: {best_run.config}")
+
+    with open("artisanal_results.md", "w") as write_file:
+        write_file.writelines(
+            ["Best Run:", f"Run ID: {best_run.id}",
+             f"Test Accuracy: {best_run.summary['accuracy']}",
+             f"Hyperparameters: {best_run.config}"
+             ]
+        )
